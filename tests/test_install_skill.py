@@ -198,6 +198,30 @@ raise SystemExit(1)
             self.assertTrue(installed_skill.is_file())
             self.assertEqual(installed_skill.read_text(), original_skill)
 
+    def test_installed_agents_copy_can_install_cursor_without_force(self):
+        with isolated_home() as home:
+            agents_result = self.run_installer(home, "--agents")
+            self.assertEqual(agents_result.returncode, 0, agents_result.stderr)
+
+            installed_root = home / ".agents" / "skills" / NAME
+            installed_installer = installed_root / "scripts" / "install_skill.sh"
+            installed_skill = installed_root / "SKILL.md"
+            original_skill = installed_skill.read_text()
+
+            cursor_result = subprocess.run(
+                ["bash", str(installed_installer), "--cursor"],
+                cwd=installed_root,
+                env={**os.environ, "HOME": str(home)},
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertEqual(cursor_result.returncode, 0, cursor_result.stderr)
+            self.assertTrue(
+                (home / ".cursor" / "commands" / f"{NAME}.md").is_file()
+            )
+            self.assertEqual(installed_skill.read_text(), original_skill)
+
     def test_concurrently_created_tree_destination_is_preserved_without_force(self):
         with isolated_home() as home:
             concurrent_destination = home / ".claude" / "skills" / NAME

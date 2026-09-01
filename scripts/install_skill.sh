@@ -69,6 +69,17 @@ refuse_overwrite() {
 
 preflight_destination() {
   local destination="$1"
+  if python3 - "$ROOT" "$destination" <<'PY'
+import sys
+from pathlib import Path
+
+source = Path(sys.argv[1]).resolve()
+destination = Path(sys.argv[2]).resolve()
+sys.exit(0 if source == destination else 1)
+PY
+  then
+    return 0
+  fi
   if [[ ( -e "$destination" || -L "$destination" ) && "$force" != true ]]; then
     refuse_overwrite "$destination"
   fi
