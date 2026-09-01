@@ -9,6 +9,7 @@ REQUIRED_SECTIONS = [
     "## Why repository naming conventions matter",
     "## The pattern, at a glance",
     "## Quick start",
+    "## Install as a global skill",
     "## Validating and suggesting names",
     "## Enforcing the convention",
     "## Extending the vocabulary",

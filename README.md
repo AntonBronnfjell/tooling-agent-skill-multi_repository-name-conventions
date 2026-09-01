@@ -77,6 +77,21 @@ automatically as repo-level custom instructions.
 **Any other agent (Grok, Codex, and generic `AGENTS.md` readers)** —
 `AGENTS.md` follows the emerging cross-tool `agents.md` convention.
 
+## Install as a global skill
+
+Install for every supported host:
+
+    bash scripts/install_skill.sh
+
+Use `/repo-name-conventions` in GitHub Copilot CLI, Claude Code, Cursor, and
+Gemini CLI. Target one host with `--copilot`, `--claude`, `--cursor`, or
+`--gemini`; `--cursor` and `--gemini` also install the shared generic Agent
+Skill they require. Existing destinations are protected unless `--force` is
+given.
+
+Generic Agent Skills-compatible tools can load the installed package from
+`~/.agents/skills/repo-name-conventions`; their command syntax is host-specific.
+
 ## Validating and suggesting names
 
 ```
