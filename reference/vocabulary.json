@@ -1,0 +1,125 @@
+{
+  "purpose": [
+    "project", "product", "service", "platform", "client", "challenge", "book",
+    "course", "bootcamp", "hackathon", "workshop", "guide", "example", "template",
+    "starter", "sandbox", "poc", "prototype", "mvp", "research", "spike",
+    "migration", "config", "tooling", "docs", "license", "archive", "fork",
+    "mirror", "assets", "data", "benchmark", "security", "compliance"
+  ],
+  "platform": {
+    "web_frontends": [
+      "react", "nextjs", "remix", "astro", "svelte", "sveltekit", "vue", "nuxt",
+      "angular", "solid", "qwik", "htmx", "alpine"
+    ],
+    "backends": [
+      "nodejs", "deno", "bun", "dotnet", "java", "kotlin", "python", "ruby",
+      "php", "go", "rust", "elixir", "scala"
+    ],
+    "mobile_desktop": [
+      "ios", "android", "flutter", "reactnative", "expo", "ionic", "tauri",
+      "electron", "windows", "macos", "linux"
+    ],
+    "cloud_infra": [
+      "aws", "azure", "gcp", "oci", "do", "vercel", "netlify", "cloudflare",
+      "supabase", "firebase", "heroku", "fly", "kubernetes", "helm", "argocd",
+      "terraform", "pulumi", "ansible", "chef", "puppet"
+    ],
+    "embedded_hardware": ["arduino", "esp32", "esp8266", "raspi", "stm32"],
+    "learning_sources": [
+      "coursera", "pluralsight", "oreilly", "packt", "udemy", "edx",
+      "frontendmasters", "youtube", "github"
+    ],
+    "ai_agents": [
+      "claude", "chatgpt", "gemini", "copilot", "cursor", "windsurf", "cline",
+      "aider", "zed", "continue", "amazonq", "mcp", "agent"
+    ],
+    "ai_ml_frameworks": [
+      "pytorch", "tensorflow", "jax", "sklearn", "huggingface", "langchain",
+      "langgraph", "llamaindex", "crewai", "autogen", "dspy", "semantickernel",
+      "pydanticai", "vercelai", "mastra", "ollama", "vllm", "bedrock",
+      "vertexai", "azureopenai", "openrouter", "litellm", "pinecone",
+      "weaviate", "qdrant", "chroma", "pgvector"
+    ],
+    "data_analytics": [
+      "spark", "databricks", "snowflake", "bigquery", "redshift", "dbt",
+      "airflow", "dagster", "prefect", "kafka", "flink", "duckdb",
+      "clickhouse", "postgres", "mysql", "mongodb", "redis", "elasticsearch",
+      "neo4j"
+    ],
+    "testing_qa": [
+      "playwright", "cypress", "selenium", "jest", "vitest", "pytest",
+      "junit", "k6", "jmeter", "gatling", "locust"
+    ],
+    "observability_security": [
+      "opentelemetry", "prometheus", "grafana", "datadog", "sentry",
+      "newrelic", "splunk", "vault", "opa", "keycloak", "auth0", "okta",
+      "semgrep", "trivy"
+    ],
+    "games_graphics_xr": [
+      "unity", "unreal", "godot", "bevy", "threejs", "webgl", "webgpu",
+      "webxr", "visionos", "quest"
+    ],
+    "web3_blockchain": [
+      "ethereum", "solana", "polygon", "cosmos", "hardhat", "foundry", "anchor"
+    ],
+    "cms_commerce_enterprise": [
+      "wordpress", "drupal", "shopify", "magento", "contentful", "sanity",
+      "strapi", "payload", "directus", "salesforce", "sap", "dynamics",
+      "servicenow", "hubspot", "netsuite"
+    ],
+    "third_party_apis": [
+      "stripe", "paypal", "twilio", "sendgrid", "slack", "discord",
+      "telegram", "whatsapp", "teams", "jira", "notion", "obsidian", "figma",
+      "vscode", "chrome", "firefox", "zapier"
+    ]
+  },
+  "repo_type": [
+    "web", "api", "service", "microservice", "worker", "cronjob", "function",
+    "gateway", "proxy", "bot", "scraper", "etl", "pipeline", "stream", "app",
+    "mobile", "desktop", "pwa", "container", "infra", "cloud", "devops",
+    "gitops", "test", "e2e", "data", "ml", "ai", "embedsyst", "firmware",
+    "driver", "shell", "cli", "sdk", "lib", "framework", "package", "plugin",
+    "skill", "agentdef", "mcpserver", "mcpclient", "hook", "command",
+    "prompt", "eval", "rag", "finetune", "guardrail", "theme", "integration",
+    "monorepo", "dashboard", "portal", "docs-site", "browserext", "daemon",
+    "game", "engine", "shader", "simulator", "compiler", "parser", "protocol",
+    "schema", "designsys", "loadtest", "chaos", "observability", "contract",
+    "dapp", "notebook"
+  ],
+  "language": [
+    "javascript", "typescript", "python", "csharp", "java", "kotlin", "swift",
+    "dart", "go", "rust", "cpp", "c", "ruby", "php", "scala", "elixir",
+    "haskell", "lua", "r", "julia", "solidity", "bash", "zsh", "powershell",
+    "dos", "sql", "html", "css", "markdown", "yaml", "json", "toml", "hcl",
+    "dockerfile", "graphql", "protobuf", "multi", "english", "spanish", "mdx",
+    "jupyter", "objectivec", "zig", "nim", "ocaml", "erlang", "clojure",
+    "fsharp", "vb", "groovy", "perl", "matlab", "assembly", "verilog", "vhdl",
+    "glsl", "gdscript", "apex", "abap", "wasm", "nix", "rego", "jsonnet",
+    "cue", "starlark", "make", "cmake", "latex", "xml", "csv", "kql",
+    "promql", "cypher"
+  ],
+  "project_name_suffixes": [
+    "docs", "api", "web", "mobile", "admin", "cli", "sdk", "worker", "infra",
+    "installer", "demo", "starter", "test", "e2e", "bench", "fixtures"
+  ],
+  "enterprise": {
+    "business_unit": [
+      "fin", "risk", "hr", "mkt", "sales", "ops", "legal", "eng", "data",
+      "ml", "sec"
+    ],
+    "tier": ["tier1", "tier2", "tier3", "tier4"],
+    "environment": ["prod", "staging", "dev", "sandbox"],
+    "region": ["eu", "us", "apac", "cn", "gov"],
+    "compliance": [
+      "pii", "phi", "pci", "soc2", "gdpr", "hipaa", "restricted",
+      "confidential", "public"
+    ],
+    "lifecycle": [
+      "incubation", "active", "maintenance", "deprecated", "sunset",
+      "archived"
+    ]
+  },
+  "freelance": {
+    "notes": "client-<slug> is a free-form prefix (or NDA-safe alias like client-c14), not a closed vocabulary. Engagement/year segments (e.g. 2025, q3) are also free-form."
+  }
+}
