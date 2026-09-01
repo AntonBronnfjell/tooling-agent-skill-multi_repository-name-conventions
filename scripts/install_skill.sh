@@ -71,18 +71,41 @@ preflight_destination() {
 
 copy_tree() {
   local destination="$1"
-  local relative_path
 
   rm -rf "$destination"
-  mkdir -p "$destination"
+  mkdir -p "$(dirname "$destination")"
 
-  while IFS= read -r -d '' relative_path; do
-    local source="$ROOT/$relative_path"
-    local target="$destination/$relative_path"
+  python3 - "$ROOT" "$destination" <<'PY'
+import shutil
+import sys
+from pathlib import Path
 
-    mkdir -p "$(dirname "$target")"
-    cp -R "$source" "$target"
-  done < <(git -C "$ROOT" ls-files --cached -z)
+source = Path(sys.argv[1])
+destination = Path(sys.argv[2])
+excluded_names = {
+    ".git",
+    ".pytest_cache",
+    ".superpowers",
+    ".test-workspaces",
+    ".worktrees",
+    ".DS_Store",
+    ".venv",
+    "__pycache__",
+    "venv",
+}
+excluded_suffixes = (".egg-info", ".pyc")
+
+
+def ignore(_directory, names):
+    ignored = []
+    for name in names:
+        if name in excluded_names or name.endswith(excluded_suffixes):
+            ignored.append(name)
+    return ignored
+
+
+shutil.copytree(source, destination, ignore=ignore, copy_function=shutil.copy2)
+PY
 }
 
 copy_file() {

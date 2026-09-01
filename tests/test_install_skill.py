@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parent.parent
 INSTALLER = ROOT / "scripts" / "install_skill.sh"
 NAME = "repo-name-conventions"
 WORKSPACES = ROOT / ".test-workspaces"
+SKILL_SOURCE = ROOT / "SKILL.md"
 CURSOR_COMMAND = (
     "Read and follow `~/.agents/skills/repo-name-conventions/SKILL.md`. Use its\n"
     "bundled validator and suggester scripts instead of guessing repository names.\n"
@@ -94,6 +95,29 @@ class TestInstallSkill(unittest.TestCase):
             self.assertFalse((home / ".copilot").exists())
             self.assertFalse((home / ".claude").exists())
             self.assertFalse((home / ".gemini").exists())
+
+    def test_installed_agents_copy_can_install_copilot_without_git_metadata(self):
+        with isolated_home() as home:
+            agents_result = self.run_installer(home, "--agents")
+            self.assertEqual(agents_result.returncode, 0, agents_result.stderr)
+
+            installed_root = home / ".agents" / "skills" / NAME
+            installed_installer = installed_root / "scripts" / "install_skill.sh"
+            self.assertTrue(installed_installer.is_file())
+
+            copilot_result = subprocess.run(
+                ["bash", str(installed_installer), "--copilot"],
+                cwd=installed_root,
+                env={**os.environ, "HOME": str(home)},
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertEqual(copilot_result.returncode, 0, copilot_result.stderr)
+            self.assertEqual(
+                (home / ".copilot" / "skills" / NAME / "SKILL.md").read_text(),
+                SKILL_SOURCE.read_text(),
+            )
 
     def test_existing_selected_destination_aborts_without_partial_install(self):
         with isolated_home() as home:
