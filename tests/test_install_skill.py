@@ -42,6 +42,26 @@ class TestInstallSkill(unittest.TestCase):
             capture_output=True,
         )
 
+    def run_copy_staged_tree(self, source, destination):
+        return subprocess.run(
+            [
+                "bash",
+                "-lc",
+                'set -euo pipefail; '
+                'INSTALLER="$1"; SOURCE="$2"; DESTINATION="$3"; '
+                'set --; '
+                'INSTALL_SKILL_SOURCE_ONLY=1 source "$INSTALLER"; '
+                'copy_staged_tree "$SOURCE" "$DESTINATION"',
+                "_",
+                str(INSTALLER),
+                str(source),
+                str(destination),
+            ],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+        )
+
     def start_destination_racer(self, wait_for, destination, *, directory=False):
         script = """
 from pathlib import Path
@@ -240,6 +260,37 @@ raise SystemExit(1)
             self.assertFalse((home / ".cursor").exists())
             self.assertFalse((home / ".gemini").exists())
 
+    def test_force_replaces_existing_command_destinations_across_types(self):
+        variants = ("file", "directory", "symlink")
+
+        for variant in variants:
+            with self.subTest(variant=variant), isolated_home() as home:
+                cursor_command = home / ".cursor" / "commands" / f"{NAME}.md"
+                cursor_command.parent.mkdir(parents=True, exist_ok=True)
+                preserved_target = None
+
+                if variant == "file":
+                    cursor_command.write_text("old contents\n")
+                elif variant == "directory":
+                    cursor_command.mkdir()
+                    (cursor_command / "stale.md").write_text("old contents\n")
+                else:
+                    preserved_target = home / "preserved-target.md"
+                    preserved_target.write_text("keep me\n")
+                    cursor_command.symlink_to(preserved_target)
+
+                result = self.run_installer(home, "--cursor", "--force")
+
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertTrue(cursor_command.is_file())
+                self.assertFalse(cursor_command.is_symlink())
+                self.assertEqual(cursor_command.read_text(), CURSOR_COMMAND)
+                self.assertTrue(
+                    (home / ".agents" / "skills" / NAME / "SKILL.md").is_file()
+                )
+                if preserved_target is not None:
+                    self.assertEqual(preserved_target.read_text(), "keep me\n")
+
     def test_dangling_symlink_destination_requires_force(self):
         with isolated_home() as home:
             cursor_command = home / ".cursor" / "commands" / f"{NAME}.md"
@@ -260,6 +311,53 @@ raise SystemExit(1)
             self.assertTrue(cursor_command.is_file())
             self.assertFalse(cursor_command.is_symlink())
             self.assertEqual(cursor_command.read_text(), CURSOR_COMMAND)
+
+    def test_copy_staged_tree_refuses_preexisting_entries_inside_claimed_destination(self):
+        fixtures = (
+            ("file", "SKILL.md"),
+            ("directory", "scripts"),
+            ("symlink", "SKILL.md"),
+        )
+
+        for fixture, relative_path in fixtures:
+            with self.subTest(fixture=fixture), isolated_home() as home:
+                source = home.parent / f"source-{fixture}"
+                source.mkdir()
+                (source / "SKILL.md").write_text("skill source\n")
+                (source / "scripts").mkdir()
+                (source / "scripts" / "install_skill.sh").write_text("#!/usr/bin/env bash\n")
+
+                destination = home.parent / f"destination-{fixture}"
+                destination.mkdir()
+                conflict = destination / relative_path
+                preserved_target = None
+
+                if fixture == "file":
+                    conflict.write_text("concurrent\n")
+                elif fixture == "directory":
+                    conflict.mkdir()
+                    (conflict / "concurrent.txt").write_text("concurrent\n")
+                else:
+                    preserved_target = home.parent / "preserved-symlink-target"
+                    preserved_target.write_text("keep me\n")
+                    conflict.symlink_to(preserved_target)
+
+                result = self.run_copy_staged_tree(source, destination)
+
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("Refusing to overwrite", result.stderr)
+                if fixture == "directory":
+                    self.assertTrue(conflict.is_dir())
+                    self.assertEqual(
+                        (conflict / "concurrent.txt").read_text(),
+                        "concurrent\n",
+                    )
+                    self.assertFalse((conflict / "install_skill.sh").exists())
+                elif fixture == "symlink":
+                    self.assertTrue(conflict.is_symlink())
+                    self.assertEqual(preserved_target.read_text(), "keep me\n")
+                else:
+                    self.assertEqual(conflict.read_text(), "concurrent\n")
 
 
 if __name__ == "__main__":

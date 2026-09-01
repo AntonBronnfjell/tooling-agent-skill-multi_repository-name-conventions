@@ -113,8 +113,12 @@ PY
 copy_staged_tree() {
   local source="$1"
   local destination="$2"
+  local output
+  local status
 
-  python3 - "$source" "$destination" <<'PY'
+  set +e
+  output="$(python3 - "$source" "$destination" 2>&1 <<'PY'
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -122,13 +126,54 @@ from pathlib import Path
 source = Path(sys.argv[1])
 destination = Path(sys.argv[2])
 
-for child in source.iterdir():
-    target = destination / child.name
-    if child.is_dir():
-        shutil.copytree(child, target, copy_function=shutil.copy2)
-    else:
-        shutil.copy2(child, target)
+def preserve_metadata(source_path, destination_path, *, follow_symlinks=True):
+    try:
+        shutil.copystat(
+            source_path,
+            destination_path,
+            follow_symlinks=follow_symlinks,
+        )
+    except (NotImplementedError, OSError):
+        pass
+
+
+def copy_entry(source_path, destination_path):
+    if source_path.is_symlink():
+        os.symlink(os.readlink(source_path), destination_path)
+        preserve_metadata(source_path, destination_path, follow_symlinks=False)
+        return
+
+    if source_path.is_dir():
+        destination_path.mkdir(mode=source_path.stat().st_mode & 0o777)
+        for child in source_path.iterdir():
+            copy_entry(child, destination_path / child.name)
+        preserve_metadata(source_path, destination_path)
+        return
+
+    with source_path.open("rb") as source_file:
+        with destination_path.open("xb") as destination_file:
+            shutil.copyfileobj(source_file, destination_file)
+    preserve_metadata(source_path, destination_path)
+
+
+try:
+    for child in source.iterdir():
+        copy_entry(child, destination / child.name)
+except FileExistsError as error:
+    print(error.filename or str(destination), end="", file=sys.stderr)
+    raise SystemExit(3)
 PY
+)"
+  status=$?
+  set -e
+
+  if [[ $status -eq 3 ]]; then
+    refuse_overwrite "${output:-$destination}"
+  fi
+  if [[ $status -ne 0 ]]; then
+    printf '%s\n' "$output" >&2
+    exit "$status"
+  fi
 }
 
 copy_tree() {
@@ -148,7 +193,7 @@ PY
   fi
 
   if "$force"; then
-    rm -rf "$destination"
+    rm -rf -- "$destination"
     mkdir -p "$(dirname "$destination")"
     stage_tree "$destination"
     return
@@ -174,7 +219,7 @@ copy_file() {
 
   mkdir -p "$(dirname "$destination")"
   if "$force"; then
-    rm -f "$destination"
+    rm -rf -- "$destination"
     cp "$source" "$destination"
     return
   fi
@@ -184,9 +229,13 @@ copy_file() {
   fi
 }
 
+if [[ "${INSTALL_SKILL_SOURCE_ONLY:-}" == "1" ]]; then
+  return 0 2>/dev/null || exit 0
+fi
+
 staging_dir="$HOME/.${NAME}-install-staging.$$"
 cleanup() {
-  rm -rf "$staging_dir"
+  rm -rf -- "$staging_dir"
 }
 trap cleanup EXIT
 mkdir -p "$staging_dir"
