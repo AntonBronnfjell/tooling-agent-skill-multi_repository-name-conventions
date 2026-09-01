@@ -1,0 +1,20 @@
+---
+description: Repository naming convention — validate or suggest a compliant Git repo name (purpose-platform-repo-type-language_project-name). Use when creating, naming, or renaming a repository, or when asked whether a repo name is valid.
+alwaysApply: false
+---
+
+# Repository Naming Conventions
+
+Core pattern: `<purpose>-<platform>-<repo-type>-<language>_<project-name>[.<project-module>]`
+
+All lowercase, ASCII, hyphen-separated segments, `_` before the project
+name. Full controlled vocabulary and enterprise/freelance extensions:
+`reference/conventions.md`.
+
+Validate a candidate name before proposing it:
+
+    python3 scripts/validate_repo_name.py <candidate-name>
+
+Build one from parts:
+
+    python3 scripts/suggest_repo_name.py --purpose <p> --platform <pl> --repo-type <rt> --language <l> --name <project-name>
