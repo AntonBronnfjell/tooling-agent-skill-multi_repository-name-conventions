@@ -72,6 +72,18 @@ preflight_destination() {
 copy_tree() {
   local destination="$1"
 
+  if python3 - "$ROOT" "$destination" <<'PY'
+import os
+import sys
+
+source = os.path.realpath(sys.argv[1])
+destination = os.path.realpath(sys.argv[2])
+sys.exit(0 if source == destination else 1)
+PY
+  then
+    return 0
+  fi
+
   rm -rf "$destination"
   mkdir -p "$(dirname "$destination")"
 

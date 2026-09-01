@@ -119,6 +119,28 @@ class TestInstallSkill(unittest.TestCase):
                 SKILL_SOURCE.read_text(),
             )
 
+    def test_installed_agents_force_is_a_successful_no_op(self):
+        with isolated_home() as home:
+            agents_result = self.run_installer(home, "--agents")
+            self.assertEqual(agents_result.returncode, 0, agents_result.stderr)
+
+            installed_root = home / ".agents" / "skills" / NAME
+            installed_installer = installed_root / "scripts" / "install_skill.sh"
+            installed_skill = installed_root / "SKILL.md"
+            original_skill = installed_skill.read_text()
+
+            forced_result = subprocess.run(
+                ["bash", str(installed_installer), "--agents", "--force"],
+                cwd=installed_root,
+                env={**os.environ, "HOME": str(home)},
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertEqual(forced_result.returncode, 0, forced_result.stderr)
+            self.assertTrue(installed_skill.is_file())
+            self.assertEqual(installed_skill.read_text(), original_skill)
+
     def test_existing_selected_destination_aborts_without_partial_install(self):
         with isolated_home() as home:
             existing = home / ".copilot" / "skills" / NAME / "SKILL.md"
