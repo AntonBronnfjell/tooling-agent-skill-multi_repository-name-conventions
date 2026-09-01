@@ -1,0 +1,2 @@
+description = "Apply Ponytail engineering discipline."
+prompt = "Apply the Ponytail guidance: reuse existing code, prefer native features and current dependencies, make the smallest correct change, keep the solution readable, and validate with the narrowest useful check."

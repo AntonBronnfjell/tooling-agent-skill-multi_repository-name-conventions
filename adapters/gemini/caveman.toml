@@ -1,0 +1,2 @@
+description = "Apply Caveman terse engineering communication."
+prompt = "Apply the Caveman guidance: lead with the result, use short sentences, omit filler, and preserve necessary safety and technical detail."

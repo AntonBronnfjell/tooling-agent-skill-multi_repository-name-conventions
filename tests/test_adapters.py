@@ -33,6 +33,15 @@ class TestAdapterFiles(unittest.TestCase):
         content = (ROOT / ".github" / "copilot-instructions.md").read_text()
         self.assertIn("reference/conventions.md", content)
 
+    def test_ponytail_and_caveman_sources_exist(self):
+        for name in ("ponytail", "caveman"):
+            skill = (ROOT / "skills" / name / "SKILL.md").read_text()
+            self.assertIn(f"name: {name}", skill)
+            self.assertTrue((ROOT / "adapters" / "cursor" / f"{name}.md").is_file())
+            command = (ROOT / "adapters" / "gemini" / f"{name}.toml").read_text()
+            self.assertIn("prompt =", command)
+        self.assertIn("Ponytail", (ROOT / "adapters" / "AGENTS.md").read_text())
+
 
 if __name__ == "__main__":
     unittest.main()
