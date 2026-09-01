@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json
 import re
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -8,7 +9,7 @@ from pathlib import Path
 HOOK_DIR = Path(__file__).resolve().parent
 VALIDATOR = HOOK_DIR.parent.parent / "scripts" / "validate_repo_name.py"
 
-COMMAND_PATTERN = re.compile(r"(?:gh repo create|git init)\s+(\S+)")
+CONTROL_OPERATORS = re.compile(r"(&&|\|\||[;|])")
 
 
 def deny(reason):
@@ -22,16 +23,45 @@ def deny(reason):
     sys.exit(0)
 
 
+def find_candidate_name(tokens_after_command):
+    for token in tokens_after_command:
+        if token.startswith("-"):
+            continue
+        return token
+    return None
+
+
+def looks_like_non_name(token):
+    return token in (".", "..") or token.startswith("/") or token.startswith(".")
+
+
+def extract_repo_name_candidate(command):
+    segments_raw = CONTROL_OPERATORS.split(command)
+    for segment in segments_raw:
+        segment = segment.strip()
+        if not segment or CONTROL_OPERATORS.fullmatch(segment):
+            continue
+        try:
+            tokens = shlex.split(segment)
+        except ValueError:
+            continue
+        if len(tokens) >= 3 and tokens[0] == "gh" and tokens[1] == "repo" and tokens[2] == "create":
+            candidate = find_candidate_name(tokens[3:])
+            if candidate:
+                return candidate
+        elif len(tokens) >= 2 and tokens[0] == "git" and tokens[1] == "init":
+            candidate = find_candidate_name(tokens[2:])
+            if candidate and not looks_like_non_name(candidate):
+                return candidate
+    return None
+
+
 def main():
     hook_input = json.load(sys.stdin)
     command = hook_input.get("tool_input", {}).get("command", "")
 
-    match = COMMAND_PATTERN.search(command)
-    if not match:
-        sys.exit(0)
-
-    candidate = match.group(1)
-    if candidate.startswith("-"):
+    candidate = extract_repo_name_candidate(command)
+    if not candidate:
         sys.exit(0)
 
     repo_name = candidate.rsplit("/", 1)[-1]
@@ -45,7 +75,7 @@ def main():
             line for line in result.stdout.splitlines() if line.startswith("ERROR:")
         ]
         reason = "; ".join(reason_lines) or f"'{repo_name}' failed repository naming validation"
-        deny(reason)
+        deny(f"{reason} (from command token '{candidate}')")
 
     sys.exit(0)
 

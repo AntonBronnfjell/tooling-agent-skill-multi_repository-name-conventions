@@ -23,6 +23,13 @@ VALID_NAMES = [
     "tooling-mcp-mcpserver-typescript_github-issues",
     "acme-eng-platform-project-typescript-monorepo-typescript_design-system.tokens",
     "tooling-agent-skill-multi_repository-name-conventions",
+    "client-acme-docs-astro-web-markdown_storefront-docs",
+    "project-unity-game-csharp_puzzle-prototype",
+    "project-chrome-browserext-typescript_tab-manager",
+    "project-ethereum-contract-solidity_escrow-vault",
+    "tooling-opentelemetry-observability-yaml_service-slos",
+    "tooling-playwright-e2e-typescript_checkout-flows",
+    "data-dbt-pipeline-sql_warehouse-models",
 ]
 
 STRUCTURALLY_INVALID_NAMES = [
@@ -30,6 +37,16 @@ STRUCTURALLY_INVALID_NAMES = [
     "project_react_web",
     "2024-portfolio",
     "my-awesome-thing",
+]
+
+KNOWN_STRICT_MODE_VOCAB_GAPS = [
+    "project-aws-cloud-terraform_portfolio-infra",
+    "acme-data-platform-pipeline-python-etl-python_warehouse-loaders",
+    "acme-eng-platform-project-typescript-cli-typescript_internal-cli-tier2",
+    "acme-ops-infra-cloud-terraform-hcl_kubernetes-baseline-tier1",
+    "config-nix-infra-nix_workstation-baseline",
+    "acme-eng-platform-project-typescript-monorepo-typescript_design-system",
+    "acme-eng-platform-project-typescript-monorepo-typescript_design-system.tokens",
 ]
 
 
@@ -54,6 +71,24 @@ class TestValidateRepoName(unittest.TestCase):
     def test_unknown_vocab_is_error_in_strict_mode(self):
         errors, warnings = validate("prj-rx-w-js_pf", strict=True)
         self.assertEqual(len(errors), 4)
+
+    def test_known_strict_mode_vocabulary_gaps_are_documented(self):
+        # These are real examples from reference/conventions.md's own Examples
+        # section that use keywords not present in reference/vocabulary.json's
+        # tables (e.g. "terraform"/"typescript"/"nix" used as a core segment
+        # value where the tables list "hcl" or a web-frontend category
+        # instead). This is a known inconsistency between the source guide's
+        # prose and its own tables -- not a bug in the validator or in
+        # vocabulary.json's transcription. They still pass default (non-strict)
+        # validation; only --strict elevates the unknown-vocabulary warnings
+        # to errors.
+        for name in KNOWN_STRICT_MODE_VOCAB_GAPS:
+            with self.subTest(name=name):
+                errors, warnings = validate(name)
+                self.assertEqual(errors, [])
+                self.assertTrue(warnings)
+                strict_errors, _ = validate(name, strict=True)
+                self.assertTrue(strict_errors)
 
 
 if __name__ == "__main__":

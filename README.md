@@ -57,8 +57,14 @@ language of content) + the project name.
 
 ## Quick start
 
-**Claude Code** — this repo ships `SKILL.md`; Claude Code picks it up
-automatically as a project skill.
+**Claude Code** — Claude Code discovers skills at `.claude/skills/<name>/SKILL.md`
+(project-scoped) or `~/.claude/skills/<name>/SKILL.md` (personal) — a
+root-level `SKILL.md` in an unrelated working directory is not auto-loaded.
+Install this repo as a skill by cloning or symlinking it to
+`~/.claude/skills/repo-name-conventions/` (or the project-scoped path
+above). Once installed there, `SKILL.md`'s relative references
+(`reference/conventions.md`, `scripts/validate_repo_name.py`) resolve
+against the skill's own directory automatically.
 
 **Cursor** — `.cursor/rules/repo-name-conventions.mdc` is picked up as a
 project rule automatically.
@@ -87,6 +93,11 @@ default, since the vocabulary in `reference/vocabulary.json` can never be
 fully exhaustive — pass `--strict` when the check needs to be
 unambiguous, such as in CI.
 
+These commands assume your current directory is this repo (or wherever
+you installed it — see Quick start). Running them against a different
+project, use an absolute path to the script instead, e.g.
+`python3 ~/.claude/skills/repo-name-conventions/scripts/validate_repo_name.py <candidate-name>`.
+
 ## Enforcing the convention
 
 **Local — block bad names before `gh repo create` runs:**
@@ -106,6 +117,13 @@ Merge `hooks/claude-code/settings.snippet.json` into your `.claude/settings.json
 that inspects `gh repo create` / `git init` commands and denies the call
 — with a reason fed back to the model — if the name doesn't comply.
 
+`${CLAUDE_PROJECT_DIR}` in that snippet resolves to whatever project is
+currently open — correct only if this repo itself is the open project.
+For global use (`~/.claude/settings.json`, so the guard applies
+everywhere), replace it with the absolute path to wherever you installed
+this repo/skill, e.g.
+`~/.claude/skills/repo-name-conventions/hooks/claude-code/pretooluse_repo_name_guard.py`.
+
 **CI — catch drift after the fact:**
 
 `.github/workflows/validate-repo-name.yml` runs on every push and fails
@@ -119,6 +137,19 @@ matching array (or nested object, for `platform` and `enterprise`) in
 `reference/vocabulary.json`. To recognize a new keyword, add it to both
 files — the JSON array so the scripts stop warning about it, and the
 markdown table so a human reading the guide sees it too.
+
+Automated vocabulary checking covers the four core segments only —
+purpose, platform, repo-type, language. Enterprise, freelance, and
+project-name-suffix segments are structurally permitted by the naming
+pattern but not vocabulary-checked, because their position relative to
+the free-form project name is genuinely ambiguous to parse without
+already knowing the vocabulary (see `reference/conventions.md`'s own
+validation regexes, which have the same limitation by design). A few of
+the guide's own worked examples (some Terraform/Nix/monorepo names) use
+keywords that aren't yet in `reference/vocabulary.json`'s tables — that's
+a known gap between the guide's prose and its own tables, not a validator
+bug, and `--strict` enforces the tables exactly as written, not the
+examples.
 
 ## FAQ
 

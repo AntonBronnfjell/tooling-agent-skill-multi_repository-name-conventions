@@ -48,6 +48,42 @@ class TestPreToolUseHook(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertEqual(result.stdout.strip(), "")
 
+    def test_plain_git_init_with_dot_is_allowed(self):
+        result = self.run_hook("git init .")
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout.strip(), "")
+
+    def test_plain_git_init_with_no_args_is_allowed(self):
+        result = self.run_hook("git init")
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout.strip(), "")
+
+    def test_chained_git_init_command_is_allowed(self):
+        result = self.run_hook("mkdir foo && cd foo && git init && npm init -y")
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout.strip(), "")
+
+    def test_quoted_string_mentioning_gh_repo_create_is_not_matched(self):
+        result = self.run_hook('echo "gh repo create MyBadName"')
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout.strip(), "")
+
+    def test_flag_before_name_is_still_caught(self):
+        result = self.run_hook("gh repo create --public MyBadName")
+        self.assertEqual(result.returncode, 0)
+        output = json.loads(result.stdout)
+        self.assertEqual(
+            output["hookSpecificOutput"]["permissionDecision"], "deny"
+        )
+
+    def test_git_init_with_a_real_bad_name_is_caught(self):
+        result = self.run_hook("git init my-Really-Bad-Name")
+        self.assertEqual(result.returncode, 0)
+        output = json.loads(result.stdout)
+        self.assertEqual(
+            output["hookSpecificOutput"]["permissionDecision"], "deny"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
