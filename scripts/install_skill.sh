@@ -61,31 +61,21 @@ if "$cursor" || "$gemini"; then
   agents=true
 fi
 
+refuse_overwrite() {
+  local destination="$1"
+  echo "Refusing to overwrite $destination; pass --force." >&2
+  exit 1
+}
+
 preflight_destination() {
   local destination="$1"
   if [[ ( -e "$destination" || -L "$destination" ) && "$force" != true ]]; then
-    echo "Refusing to overwrite $destination; pass --force." >&2
-    exit 1
+    refuse_overwrite "$destination"
   fi
 }
 
-copy_tree() {
+stage_tree() {
   local destination="$1"
-
-  if python3 - "$ROOT" "$destination" <<'PY'
-import os
-import sys
-
-source = os.path.realpath(sys.argv[1])
-destination = os.path.realpath(sys.argv[2])
-sys.exit(0 if source == destination else 1)
-PY
-  then
-    return 0
-  fi
-
-  rm -rf "$destination"
-  mkdir -p "$(dirname "$destination")"
 
   python3 - "$ROOT" "$destination" <<'PY'
 import shutil
@@ -120,6 +110,59 @@ shutil.copytree(source, destination, ignore=ignore, copy_function=shutil.copy2)
 PY
 }
 
+copy_staged_tree() {
+  local source="$1"
+  local destination="$2"
+
+  python3 - "$source" "$destination" <<'PY'
+import shutil
+import sys
+from pathlib import Path
+
+source = Path(sys.argv[1])
+destination = Path(sys.argv[2])
+
+for child in source.iterdir():
+    target = destination / child.name
+    if child.is_dir():
+        shutil.copytree(child, target, copy_function=shutil.copy2)
+    else:
+        shutil.copy2(child, target)
+PY
+}
+
+copy_tree() {
+  local destination="$1"
+  local staged_destination
+
+  if python3 - "$ROOT" "$destination" <<'PY'
+import os
+import sys
+
+source = os.path.realpath(sys.argv[1])
+destination = os.path.realpath(sys.argv[2])
+sys.exit(0 if source == destination else 1)
+PY
+  then
+    return 0
+  fi
+
+  if "$force"; then
+    rm -rf "$destination"
+    mkdir -p "$(dirname "$destination")"
+    stage_tree "$destination"
+    return
+  fi
+
+  staged_destination="$staging_dir/${NAME}.$$.$RANDOM"
+  stage_tree "$staged_destination"
+  mkdir -p "$(dirname "$destination")"
+  if ! mkdir "$destination" 2>/dev/null; then
+    refuse_overwrite "$destination"
+  fi
+  copy_staged_tree "$staged_destination" "$destination"
+}
+
 copy_file() {
   local source="$1"
   local destination="$2"
@@ -130,8 +173,15 @@ copy_file() {
   fi
 
   mkdir -p "$(dirname "$destination")"
-  rm -f "$destination"
-  cp "$source" "$destination"
+  if "$force"; then
+    rm -f "$destination"
+    cp "$source" "$destination"
+    return
+  fi
+
+  if ! ln "$source" "$destination" 2>/dev/null; then
+    refuse_overwrite "$destination"
+  fi
 }
 
 staging_dir="$HOME/.${NAME}-install-staging.$$"

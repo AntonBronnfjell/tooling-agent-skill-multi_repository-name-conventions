@@ -42,6 +42,43 @@ class TestInstallSkill(unittest.TestCase):
             capture_output=True,
         )
 
+    def start_destination_racer(self, wait_for, destination, *, directory=False):
+        script = """
+from pathlib import Path
+import sys
+import time
+
+wait_for = Path(sys.argv[1])
+destination = Path(sys.argv[2])
+mode = sys.argv[3]
+deadline = time.time() + 10
+
+while time.time() < deadline:
+    if wait_for.exists():
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if mode == "directory":
+            destination.mkdir(parents=True, exist_ok=True)
+            (destination / "concurrent.txt").write_text("concurrent\\n")
+        else:
+            destination.write_text("concurrent\\n")
+        raise SystemExit(0)
+    time.sleep(0.01)
+
+raise SystemExit(1)
+"""
+        return subprocess.Popen(
+            [
+                "python3",
+                "-c",
+                script,
+                str(wait_for),
+                str(destination),
+                "directory" if directory else "file",
+            ],
+            cwd=ROOT,
+            env=os.environ.copy(),
+        )
+
     def test_default_install_and_overwrite_protection(self):
         with isolated_home() as home:
             result = self.run_installer(home)
@@ -140,6 +177,53 @@ class TestInstallSkill(unittest.TestCase):
             self.assertEqual(forced_result.returncode, 0, forced_result.stderr)
             self.assertTrue(installed_skill.is_file())
             self.assertEqual(installed_skill.read_text(), original_skill)
+
+    def test_concurrently_created_tree_destination_is_preserved_without_force(self):
+        with isolated_home() as home:
+            concurrent_destination = home / ".claude" / "skills" / NAME
+            racer = self.start_destination_racer(
+                home / ".agents" / "skills" / NAME / "SKILL.md",
+                concurrent_destination,
+                directory=True,
+            )
+            try:
+                result = self.run_installer(home)
+            finally:
+                racer.wait(timeout=15)
+
+            self.assertEqual(racer.returncode, 0)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("Refusing to overwrite", result.stderr)
+            self.assertTrue((home / ".agents" / "skills" / NAME / "SKILL.md").is_file())
+            self.assertTrue((home / ".copilot" / "skills" / NAME / "SKILL.md").is_file())
+            self.assertTrue(concurrent_destination.is_dir())
+            self.assertEqual(
+                (concurrent_destination / "concurrent.txt").read_text(),
+                "concurrent\n",
+            )
+            self.assertFalse((concurrent_destination / "SKILL.md").exists())
+            self.assertFalse((home / ".cursor").exists())
+            self.assertFalse((home / ".gemini").exists())
+
+    def test_concurrently_created_command_destination_is_preserved_without_force(self):
+        with isolated_home() as home:
+            concurrent_destination = home / ".gemini" / "commands" / f"{NAME}.toml"
+            racer = self.start_destination_racer(
+                home / ".cursor" / "commands" / f"{NAME}.md",
+                concurrent_destination,
+            )
+            try:
+                result = self.run_installer(home)
+            finally:
+                racer.wait(timeout=15)
+
+            self.assertEqual(racer.returncode, 0)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("Refusing to overwrite", result.stderr)
+            self.assertEqual(concurrent_destination.read_text(), "concurrent\n")
+            self.assertTrue(
+                (home / ".cursor" / "commands" / f"{NAME}.md").is_file()
+            )
 
     def test_existing_selected_destination_aborts_without_partial_install(self):
         with isolated_home() as home:
