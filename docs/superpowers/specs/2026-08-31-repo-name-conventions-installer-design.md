@@ -27,8 +27,10 @@ compatible hosts.
 
 `bash scripts/install_skill.sh` installs all supported user-scoped targets.
 `--copilot`, `--claude`, `--cursor`, `--gemini`, and `--agents` select
-individual targets. `--force` replaces only selected targets. The installer
-uses Bash and standard macOS/Linux command-line utilities only.
+individual targets. Selecting `--cursor` or `--gemini` also installs the
+canonical `--agents` package those commands reference. `--force` replaces
+only selected targets and required command dependencies. The installer uses
+Bash and standard macOS/Linux command-line utilities only.
 
 Copilot CLI and Claude Code expose the installed skill as
 `/repo-name-conventions`. Cursor and Gemini CLI expose native commands with
