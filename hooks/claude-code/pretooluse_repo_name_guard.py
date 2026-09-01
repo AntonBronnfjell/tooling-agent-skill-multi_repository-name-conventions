@@ -11,6 +11,17 @@ VALIDATOR = HOOK_DIR.parent.parent / "scripts" / "validate_repo_name.py"
 
 CONTROL_OPERATORS = re.compile(r"(&&|\|\||[;|])")
 
+# Flags known to take no value -- everything else starting with "-" is
+# treated as consuming the next token as its value (skip both), unless it's
+# in "--flag=value" form. This errs toward skipping too much rather than
+# misidentifying a flag's value as the repo name (a false denial of a valid
+# name is worse than occasionally missing a bad one -- CI is the real gate).
+BOOLEAN_FLAGS = {
+    "--public", "--private", "--internal", "--clone", "--push",
+    "--add-readme", "--disable-issues", "--disable-wiki",
+    "--bare", "--quiet", "-q", "--shared",
+}
+
 
 def deny(reason):
     print(json.dumps({
@@ -24,8 +35,14 @@ def deny(reason):
 
 
 def find_candidate_name(tokens_after_command):
+    skip_next = False
     for token in tokens_after_command:
+        if skip_next:
+            skip_next = False
+            continue
         if token.startswith("-"):
+            if "=" not in token and token not in BOOLEAN_FLAGS:
+                skip_next = True
             continue
         return token
     return None

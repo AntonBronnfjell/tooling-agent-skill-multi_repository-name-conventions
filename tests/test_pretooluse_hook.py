@@ -84,6 +84,39 @@ class TestPreToolUseHook(unittest.TestCase):
             output["hookSpecificOutput"]["permissionDecision"], "deny"
         )
 
+    def test_value_taking_flag_before_name_does_not_misidentify_value_as_name(self):
+        result = self.run_hook(
+            'gh repo create --description "my cool repo" tooling-agent-skill-markdown_demo'
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout.strip(), "")
+
+    def test_value_taking_flag_before_bad_name_still_catches_it(self):
+        result = self.run_hook("gh repo create --description x MyBadName")
+        self.assertEqual(result.returncode, 0)
+        output = json.loads(result.stdout)
+        self.assertEqual(
+            output["hookSpecificOutput"]["permissionDecision"], "deny"
+        )
+
+    def test_two_boolean_flags_then_bad_name_is_still_caught(self):
+        result = self.run_hook("gh repo create --public --disable-wiki MyBadName")
+        self.assertEqual(result.returncode, 0)
+        output = json.loads(result.stdout)
+        self.assertEqual(
+            output["hookSpecificOutput"]["permissionDecision"], "deny"
+        )
+
+    def test_git_init_value_taking_flag_before_bad_name_is_still_caught(self):
+        result = self.run_hook(
+            "git init --separate-git-dir /some/path my-Really-Bad-Name"
+        )
+        self.assertEqual(result.returncode, 0)
+        output = json.loads(result.stdout)
+        self.assertEqual(
+            output["hookSpecificOutput"]["permissionDecision"], "deny"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
