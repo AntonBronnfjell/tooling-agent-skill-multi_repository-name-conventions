@@ -156,6 +156,27 @@ class TestInstallSkill(unittest.TestCase):
             self.assertFalse((home / ".cursor").exists())
             self.assertFalse((home / ".gemini").exists())
 
+    def test_dangling_symlink_destination_requires_force(self):
+        with isolated_home() as home:
+            cursor_command = home / ".cursor" / "commands" / f"{NAME}.md"
+            cursor_command.parent.mkdir(parents=True, exist_ok=True)
+            cursor_command.symlink_to(home / "missing-target.md")
+
+            result = self.run_installer(home, "--cursor")
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("Refusing to overwrite", result.stderr)
+            self.assertTrue(cursor_command.is_symlink())
+            self.assertFalse(cursor_command.exists())
+            self.assertFalse((home / ".agents").exists())
+
+            forced_result = self.run_installer(home, "--cursor", "--force")
+
+            self.assertEqual(forced_result.returncode, 0, forced_result.stderr)
+            self.assertTrue(cursor_command.is_file())
+            self.assertFalse(cursor_command.is_symlink())
+            self.assertEqual(cursor_command.read_text(), CURSOR_COMMAND)
+
 
 if __name__ == "__main__":
     unittest.main()

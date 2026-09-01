@@ -63,7 +63,7 @@ fi
 
 preflight_destination() {
   local destination="$1"
-  if [[ -e "$destination" && "$force" != true ]]; then
+  if [[ ( -e "$destination" || -L "$destination" ) && "$force" != true ]]; then
     echo "Refusing to overwrite $destination; pass --force." >&2
     exit 1
   fi
